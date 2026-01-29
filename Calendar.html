@@ -1,450 +1,318 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Interactive Calendar</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+<meta charset="UTF-8">
+<title>Scrollable Calendar</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 12px;
+  }
 
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      min-height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 20px;
-    }
+  .calendar {
+    max-width: 1200px;
+    margin: auto;
+  }
 
-    .container {
-      background: white;
-      border-radius: 20px;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-      padding: 40px;
-      max-width: 1100px;
-      width: 100%;
-    }
+  .topbar {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
 
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 18px;
-      flex-wrap: wrap;
-      gap: 14px;
-    }
+  button {
+    padding: 6px 10px;
+    cursor: pointer;
+  }
 
-    .title {
-      font-size: 26px;
-      font-weight: 650;
-      color: #333;
-      line-height: 1.1;
-    }
+  .year-container {
+    height: 80vh;
+    overflow-y: auto;
+  }
 
-    .nav-controls {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-      flex-wrap: wrap;
-    }
+  .year {
+    margin-bottom: 24px;
+  }
 
-    button {
-      background: #667eea;
-      color: white;
-      border: none;
-      padding: 10px 14px;
-      border-radius: 10px;
-      cursor: pointer;
-      font-size: 14px;
-      font-weight: 600;
-      transition: all 0.2s ease;
-      user-select: none;
-    }
+  .year-title {
+    font-size: 1.4em;
+    margin: 8px 0;
+  }
 
-    button:hover {
-      background: #764ba2;
-      transform: translateY(-1px);
-      box-shadow: 0 6px 16px rgba(102,126,234,0.35);
-    }
+  .year-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 12px;
+  }
 
-    button:active { transform: translateY(0); }
+  .month {
+    border: 1px solid #ddd;
+    padding: 6px;
+  }
 
-    .view-toggle {
-      display: flex;
-      gap: 6px;
-      background: #f0f0f0;
-      padding: 6px;
-      border-radius: 10px;
-    }
+  .month-title {
+    text-align: center;
+    font-weight: bold;
+    cursor: pointer;
+    margin-bottom: 4px;
+  }
 
-    .view-toggle button {
-      background: transparent;
-      color: #666;
-      padding: 8px 14px;
-    }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.75em;
+  }
 
-    .view-toggle button.active {
-      background: #667eea;
-      color: white;
-    }
+  th, td {
+    border: 1px solid #eee;
+    padding: 3px;
+    text-align: center;
+  }
 
-    .year-month-display {
-      font-size: 18px;
-      font-weight: 700;
-      color: #333;
-      text-align: center;
-      margin-bottom: 18px;
-    }
+  th {
+    background: #f4f4f4;
+  }
 
-    /* Year View */
-    .year-view {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 18px;
-    }
+  .week {
+    background: #fafafa;
+    color: #666;
+    font-size: 0.7em;
+  }
 
-    .month-card {
-      background: #f8f9ff;
-      border: 2px solid #e6e6ee;
-      border-radius: 14px;
-      padding: 14px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
+  .today {
+    background: #4caf50;
+    color: white;
+    font-weight: bold;
+  }
 
-    .month-card:hover {
-      border-color: #667eea;
-      transform: translateY(-3px);
-      box-shadow: 0 10px 28px rgba(102,126,234,0.18);
-    }
+  .selected {
+    outline: 2px solid #2196f3;
+  }
 
-    .month-name {
-      font-size: 15px;
-      font-weight: 750;
-      color: #333;
-      margin-bottom: 10px;
-      text-align: center;
-    }
+  .hidden {
+    display: none;
+  }
 
-    .mini-calendar {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      gap: 4px;
-    }
-
-    .mini-day {
-      aspect-ratio: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 11px;
-      font-weight: 600;
-      border-radius: 6px;
-      background: white;
-      color: #555;
-    }
-
-    .mini-day.weekday-header {
-      background: #667eea;
-      color: #fff;
-      font-weight: 800;
-      font-size: 10px;
-      letter-spacing: 0.2px;
-    }
-
-    .mini-day.other-month { color: #c9c9d3; }
-
-    .mini-day.today {
-      background: #d4c5e2;
-      color: #4a4a6a;
-      font-weight: 900;
-      border: 1px solid #b8a7d1;
-      box-shadow: none;
-    }
-
-    /* Month View */
-    .month-view { display: none; }
-    .month-view.active { display: block; }
-
-    .calendar-grid {
-      display: grid;
-      grid-template-columns: 64px repeat(7, 1fr);
-      gap: 1px;
-      background: #e0e0e0;
-      border: 2px solid #e0e0e0;
-      border-radius: 14px;
-      overflow: hidden;
-    }
-
-    .weekday-header {
-      background: #667eea;
-      color: white;
-      padding: 12px 10px;
-      text-align: center;
-      font-weight: 800;
-      font-size: 13px;
-    }
-
-    .week-number {
-      background: #f2f2f2;
-      color: #555;
-      padding: 12px 10px;
-      text-align: center;
-      font-weight: 800;
-      font-size: 12px;
-    }
-
-    .day {
-      aspect-ratio: 1;
-      background: white;
-      padding: 8px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      font-weight: 650;
-      cursor: pointer;
-      transition: all 0.15s ease;
-      min-height: 60px;
-    }
-
-    .day:hover { background: #f0f0ff; transform: scale(1.03); }
-
-    .day.other-month {
-      background: #fafafa;
-      color: #c9c9d3;
-    }
-
-    .day.today {
-      background: #d4c5e2;
-      color: #4a4a6a;
-      font-weight: 900;
-      border: 1px solid #b8a7d1;
-    }
-
-    .day-number { font-size: 14px; }
-
-    @media (max-width: 768px) {
-      .container { padding: 18px; }
-      .title { font-size: 22px; }
-      .year-view { grid-template-columns: 1fr; }
-      .calendar-grid { grid-template-columns: 56px repeat(7, 1fr); }
-      .day { min-height: 52px; padding: 6px; }
-      .day-number { font-size: 12px; }
-    }
-  </style>
+  .month-scroll {
+    height: 80vh;
+    overflow-y: auto;
+  }
+</style>
 </head>
 <body>
-  <div class="container">
-    <div class="header">
-      <h1 class="title">📅 Calendar</h1>
 
-      <div class="nav-controls">
-        <button type="button" onclick="previousYear()">← Year</button>
-        <button type="button" onclick="previousMonth()">← Month</button>
-        <button type="button" onclick="goToToday()">Today</button>
-        <button type="button" onclick="nextMonth()">Month →</button>
-        <button type="button" onclick="nextYear()">Year →</button>
-      </div>
-
-      <div class="view-toggle" role="tablist" aria-label="Calendar view">
-        <button id="btnYear" class="active" type="button" onclick="switchView('year')">Year</button>
-        <button id="btnMonth" type="button" onclick="switchView('month')">Month</button>
-      </div>
-    </div>
-
-    <div class="year-month-display" id="dateDisplay"></div>
-
-    <div class="year-view" id="yearView"></div>
-
-    <div class="month-view" id="monthView">
-      <div class="calendar-grid" id="calendarGrid"></div>
-    </div>
+<div class="calendar">
+  <div class="topbar">
+    <button onclick="showYearView()">Year view</button>
+    <button onclick="goToday()">Today</button>
   </div>
 
-  <script>
-    let currentDate = new Date();
-    let currentView = "year";
+  <div id="yearView" class="year-container"></div>
+  <div id="monthView" class="month-scroll hidden"></div>
+</div>
 
-    const MONTHS = [
-      "January","February","March","April","May","June",
-      "July","August","September","October","November","December"
-    ];
+<script>
+let view = "year";
+let selectedDate = null;
+let today = new Date();
+let startYear = today.getFullYear() - 1;
+let endYear = today.getFullYear() + 1;
 
-    const DAYS_OF_WEEK = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
-    const MINI_HEADERS = ["M","T","W","T","F","S","S"];
+function goToday() {
+  selectedDate = new Date();
+  showYearView();
+  scrollToYear(today.getFullYear());
+}
 
-    function cloneDate(d) { return new Date(d.getTime()); }
+function showYearView() {
+  view = "year";
+  document.getElementById("monthView").classList.add("hidden");
+  document.getElementById("yearView").classList.remove("hidden");
+}
 
-    function getISOWeekNumber(date) {
-      const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-      const dayNum = d.getUTCDay() || 7;
-      d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-      const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-      return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+function showMonthView(year, month) {
+  view = "month";
+  const container = document.getElementById("monthView");
+  container.innerHTML = "";
+  container.classList.remove("hidden");
+  document.getElementById("yearView").classList.add("hidden");
+
+  let baseDate = new Date(year, month, 1);
+  for (let i = -6; i <= 6; i++) {
+    const d = new Date(baseDate.getFullYear(), baseDate.getMonth() + i, 1);
+    container.appendChild(renderFullMonth(d.getFullYear(), d.getMonth()));
+  }
+
+  container.scrollTop = container.scrollHeight / 2;
+  container.onscroll = () => handleMonthScroll(container);
+}
+
+function handleMonthScroll(container) {
+  if (container.scrollTop < 200) {
+    prependMonth(container);
+  } else if (container.scrollTop + container.clientHeight > container.scrollHeight - 200) {
+    appendMonth(container);
+  }
+}
+
+function prependMonth(container) {
+  const first = container.firstChild.dataset;
+  const d = new Date(+first.year, +first.month - 1, 1);
+  container.prepend(renderFullMonth(d.getFullYear(), d.getMonth()));
+}
+
+function appendMonth(container) {
+  const last = container.lastChild.dataset;
+  const d = new Date(+last.year, +last.month + 1, 1);
+  container.appendChild(renderFullMonth(d.getFullYear(), d.getMonth()));
+}
+
+function scrollToYear(year) {
+  const el = document.getElementById("year-" + year);
+  if (el) el.scrollIntoView({ behavior: "smooth" });
+}
+
+function getWeekNumber(date) {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+}
+
+function renderMonthTable(year, month) {
+  const table = document.createElement("table");
+  table.dataset.year = year;
+  table.dataset.month = month;
+
+  const thead = document.createElement("thead");
+  thead.innerHTML = "<tr><th>Wk</th><th>Mo</th><th>Tu</th><th>We</th><th>Th</th><th>Fr</th><th>Sa</th><th>Su</th></tr>";
+  table.appendChild(thead);
+
+  const tbody = document.createElement("tbody");
+  const firstDay = new Date(year, month, 1);
+  const startDay = (firstDay.getDay() + 6) % 7;
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  let row = document.createElement("tr");
+  let weekDate = new Date(year, month, 1 - startDay);
+  let weekCell = document.createElement("td");
+  weekCell.className = "week";
+  weekCell.textContent = getWeekNumber(weekDate);
+  row.appendChild(weekCell);
+
+  for (let i = 0; i < startDay; i++) row.appendChild(document.createElement("td"));
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const date = new Date(year, month, day);
+    const cell = document.createElement("td");
+    cell.textContent = day;
+
+    if (date.toDateString() === today.toDateString()) cell.classList.add("today");
+    if (selectedDate && date.toDateString() === selectedDate.toDateString()) cell.classList.add("selected");
+
+    cell.onclick = (e) => {
+      selectedDate = date;
+      e.stopPropagation();
+    };
+
+    row.appendChild(cell);
+
+    if ((startDay + day) % 7 === 0) {
+      tbody.appendChild(row);
+      row = document.createElement("tr");
+      weekDate.setDate(weekDate.getDate() + 7);
+      weekCell = document.createElement("td");
+      weekCell.className = "week";
+      weekCell.textContent = getWeekNumber(weekDate);
+      row.appendChild(weekCell);
     }
+  }
 
-    function isToday(date) {
-      const t = new Date();
-      return (
-        date.getFullYear() === t.getFullYear() &&
-        date.getMonth() === t.getMonth() &&
-        date.getDate() === t.getDate()
-      );
+  if (row.children.length > 1) tbody.appendChild(row);
+  table.appendChild(tbody);
+  return table;
+}
+
+function renderFullMonth(year, month) {
+  const wrapper = document.createElement("div");
+  wrapper.className = "month";
+  wrapper.dataset.year = year;
+  wrapper.dataset.month = month;
+
+  const title = document.createElement("div");
+  title.className = "month-title";
+  title.textContent = new Date(year, month).toLocaleString("default", { month: "long", year: "numeric" });
+  title.onclick = () => showMonthView(year, month);
+
+  wrapper.appendChild(title);
+  wrapper.appendChild(renderMonthTable(year, month));
+  return wrapper;
+}
+
+function renderYear(year) {
+  const container = document.createElement("div");
+  container.className = "year";
+  container.id = "year-" + year;
+
+  const title = document.createElement("div");
+  title.className = "year-title";
+  title.textContent = year;
+  container.appendChild(title);
+
+  const grid = document.createElement("div");
+  grid.className = "year-grid";
+
+  for (let m = 0; m < 12; m++) {
+    const month = document.createElement("div");
+    month.className = "month";
+
+    const name = document.createElement("div");
+    name.className = "month-title";
+    name.textContent = new Date(year, m).toLocaleString("default", { month: "long" });
+    name.onclick = () => showMonthView(year, m);
+
+    month.appendChild(name);
+    month.appendChild(renderMonthTable(year, m));
+    grid.appendChild(month);
+  }
+
+  container.appendChild(grid);
+  return container;
+}
+
+function loadInitialYears() {
+  const container = document.getElementById("yearView");
+  for (let y = startYear; y <= endYear; y++) {
+    container.appendChild(renderYear(y));
+  }
+
+  container.onscroll = () => {
+    if (container.scrollTop < 300) {
+      prependYear(container);
+    } else if (container.scrollTop + container.clientHeight > container.scrollHeight - 300) {
+      appendYear(container);
     }
+  };
 
-    function mondayFirstDayIndex(date) {
-      return (date.getDay() + 6) % 7;
-    }
+  scrollToYear(today.getFullYear());
+}
 
-    function startOfCalendarGrid(year, month) {
-      const first = new Date(year, month, 1);
-      const offset = mondayFirstDayIndex(first);
-      const start = new Date(year, month, 1 - offset);
-      start.setHours(0,0,0,0);
-      return start;
-    }
+function prependYear(container) {
+  startYear--;
+  container.prepend(renderYear(startYear));
+}
 
-    function renderYearView() {
-      const yearView = document.getElementById("yearView");
-      yearView.innerHTML = "";
-      document.getElementById("dateDisplay").textContent = currentDate.getFullYear();
+function appendYear(container) {
+  endYear++;
+  container.appendChild(renderYear(endYear));
+}
 
-      const y = currentDate.getFullYear();
+loadInitialYears();
+</script>
 
-      for (let m = 0; m < 12; m++) {
-        const monthCard = document.createElement("div");
-        monthCard.className = "month-card";
-        monthCard.onclick = () => {
-          currentDate = new Date(y, m, 1);
-          switchView("month");
-        };
-
-        let html = `<div class="month-name">${MONTHS[m]}</div>`;
-        html += `<div class="mini-calendar">`;
-
-        for (const h of MINI_HEADERS) {
-          html += `<div class="mini-day weekday-header">${h}</div>`;
-        }
-
-        const start = startOfCalendarGrid(y, m);
-        for (let i = 0; i < 42; i++) {
-          const d = cloneDate(start);
-          d.setDate(start.getDate() + i);
-
-          const classes = ["mini-day"];
-          if (d.getMonth() !== m) classes.push("other-month");
-          if (isToday(d)) classes.push("today");
-
-          html += `<div class="${classes.join(" ")}">${d.getDate()}</div>`;
-        }
-
-        html += `</div>`;
-        monthCard.innerHTML = html;
-        yearView.appendChild(monthCard);
-      }
-    }
-
-    function renderMonthView() {
-      const calendarGrid = document.getElementById("calendarGrid");
-      calendarGrid.innerHTML = "";
-
-      const y = currentDate.getFullYear();
-      const m = currentDate.getMonth();
-
-      document.getElementById("dateDisplay").textContent = `${MONTHS[m]} ${y}`;
-
-      const wkHeader = document.createElement("div");
-      wkHeader.className = "weekday-header";
-      wkHeader.textContent = "Wk";
-      calendarGrid.appendChild(wkHeader);
-
-      for (const name of DAYS_OF_WEEK) {
-        const header = document.createElement("div");
-        header.className = "weekday-header";
-        header.textContent = name;
-        calendarGrid.appendChild(header);
-      }
-
-      const start = startOfCalendarGrid(y, m);
-
-      for (let week = 0; week < 6; week++) {
-        const weekStart = cloneDate(start);
-        weekStart.setDate(start.getDate() + week * 7);
-
-        const weekCell = document.createElement("div");
-        weekCell.className = "week-number";
-        weekCell.textContent = getISOWeekNumber(weekStart);
-        calendarGrid.appendChild(weekCell);
-
-        for (let dow = 0; dow < 7; dow++) {
-          const d = cloneDate(weekStart);
-          d.setDate(weekStart.getDate() + dow);
-
-          const dayCell = document.createElement("div");
-          dayCell.className = "day";
-          if (d.getMonth() !== m) dayCell.classList.add("other-month");
-          if (isToday(d)) dayCell.classList.add("today");
-
-          dayCell.innerHTML = `<span class="day-number">${d.getDate()}</span>`;
-          calendarGrid.appendChild(dayCell);
-        }
-      }
-    }
-
-    function switchView(view) {
-      currentView = view;
-
-      document.getElementById("btnYear").classList.toggle("active", view === "year");
-      document.getElementById("btnMonth").classList.toggle("active", view === "month");
-
-      const yearViewEl = document.getElementById("yearView");
-      const monthViewEl = document.getElementById("monthView");
-
-      if (view === "year") {
-        yearViewEl.style.display = "grid";
-        monthViewEl.classList.remove("active");
-        renderYearView();
-      } else {
-        yearViewEl.style.display = "none";
-        monthViewEl.classList.add("active");
-        renderMonthView();
-      }
-    }
-
-    function previousMonth() {
-      currentDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
-      if (currentView === "month") renderMonthView();
-      else renderYearView();
-    }
-
-    function nextMonth() {
-      currentDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1);
-      if (currentView === "month") renderMonthView();
-      else renderYearView();
-    }
-
-    function previousYear() {
-      currentDate = new Date(currentDate.getFullYear() - 1, currentDate.getMonth(), 1);
-      if (currentView === "month") renderMonthView();
-      else renderYearView();
-    }
-
-    function nextYear() {
-      currentDate = new Date(currentDate.getFullYear() + 1, currentDate.getMonth(), 1);
-      if (currentView === "month") renderMonthView();
-      else renderYearView();
-    }
-
-    function goToToday() {
-      const t = new Date();
-      currentDate = new Date(t.getFullYear(), t.getMonth(), 1);
-      if (currentView === "month") renderMonthView();
-      else renderYearView();
-    }
-
-    renderYearView();
-  </script>
 </body>
 </html>
