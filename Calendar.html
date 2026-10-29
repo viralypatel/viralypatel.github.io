@@ -122,9 +122,11 @@ let startYear = today.getFullYear() - 1;
 let endYear = today.getFullYear() + 1;
 
 function goToday() {
+  today = new Date();
   selectedDate = new Date();
   showYearView();
-  scrollToYear(today.getFullYear());
+  refreshHighlights();
+  scrollToToday(true);
 }
 
 function showYearView() {
@@ -146,7 +148,9 @@ function showMonthView(year, month) {
     container.appendChild(renderFullMonth(d.getFullYear(), d.getMonth()));
   }
 
-  container.scrollTop = container.scrollHeight / 2;
+  container.onscroll = null;
+  const target = container.querySelector(`.month[data-year="${year}"][data-month="${month}"]`);
+  container.scrollTop = target.offsetTop - container.offsetTop;
   container.onscroll = () => handleMonthScroll(container);
 }
 
@@ -161,7 +165,9 @@ function handleMonthScroll(container) {
 function prependMonth(container) {
   const first = container.firstChild.dataset;
   const d = new Date(+first.year, +first.month - 1, 1);
+  const before = container.scrollHeight;
   container.prepend(renderFullMonth(d.getFullYear(), d.getMonth()));
+  container.scrollTop += container.scrollHeight - before;
 }
 
 function appendMonth(container) {
@@ -170,9 +176,24 @@ function appendMonth(container) {
   container.appendChild(renderFullMonth(d.getFullYear(), d.getMonth()));
 }
 
-function scrollToYear(year) {
-  const el = document.getElementById("year-" + year);
-  if (el) el.scrollIntoView({ behavior: "smooth" });
+// Scroll only the year container (not the page) so today's cell is centred.
+function scrollToToday(smooth) {
+  const container = document.getElementById("yearView");
+  const el = container.querySelector(".today") || document.getElementById("year-" + today.getFullYear());
+  if (!el) return;
+  const offset = el.getBoundingClientRect().top - container.getBoundingClientRect().top;
+  const top = container.scrollTop + offset - (container.clientHeight - el.offsetHeight) / 2;
+  container.scrollTo({ top: Math.max(0, top), behavior: smooth ? "smooth" : "auto" });
+}
+
+function refreshHighlights() {
+  document.querySelectorAll("td.today").forEach(c => c.classList.remove("today"));
+  document.querySelectorAll("td.selected").forEach(c => c.classList.remove("selected"));
+  document.querySelectorAll("td[data-date]").forEach(c => {
+    const d = new Date(+c.dataset.date);
+    if (d.toDateString() === today.toDateString()) c.classList.add("today");
+    if (selectedDate && d.toDateString() === selectedDate.toDateString()) c.classList.add("selected");
+  });
 }
 
 function getWeekNumber(date) {
@@ -210,12 +231,14 @@ function renderMonthTable(year, month) {
     const date = new Date(year, month, day);
     const cell = document.createElement("td");
     cell.textContent = day;
+    cell.dataset.date = date.getTime();
 
     if (date.toDateString() === today.toDateString()) cell.classList.add("today");
     if (selectedDate && date.toDateString() === selectedDate.toDateString()) cell.classList.add("selected");
 
     cell.onclick = (e) => {
       selectedDate = date;
+      refreshHighlights();
       e.stopPropagation();
     };
 
@@ -284,26 +307,32 @@ function renderYear(year) {
   return container;
 }
 
+function onYearScroll() {
+  const container = document.getElementById("yearView");
+  if (container.scrollTop < 300) {
+    prependYear(container);
+  } else if (container.scrollTop + container.clientHeight > container.scrollHeight - 300) {
+    appendYear(container);
+  }
+}
+
 function loadInitialYears() {
   const container = document.getElementById("yearView");
   for (let y = startYear; y <= endYear; y++) {
     container.appendChild(renderYear(y));
   }
 
-  container.onscroll = () => {
-    if (container.scrollTop < 300) {
-      prependYear(container);
-    } else if (container.scrollTop + container.clientHeight > container.scrollHeight - 300) {
-      appendYear(container);
-    }
-  };
-
-  scrollToYear(today.getFullYear());
+  scrollToToday(false);
+  // Attach infinite-scroll only after the initial position is set, so the
+  // programmatic scroll can't trigger a prepend and shift the view to a past year.
+  container.onscroll = onYearScroll;
 }
 
 function prependYear(container) {
   startYear--;
+  const before = container.scrollHeight;
   container.prepend(renderYear(startYear));
+  container.scrollTop += container.scrollHeight - before;
 }
 
 function appendYear(container) {
