@@ -29,35 +29,36 @@
   }
 
   .year-container {
-    height: 80vh;
+    height: calc(100vh - 70px);
     overflow-y: auto;
   }
 
   .year {
-    margin-bottom: 24px;
+    margin-bottom: 12px;
   }
 
   .year-title {
     font-size: 1.4em;
-    margin: 8px 0;
+    margin: 2px 0 4px;
   }
 
   .year-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    gap: 12px;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 6px;
   }
 
   .month {
     border: 1px solid #ddd;
-    padding: 6px;
+    padding: 3px;
   }
 
   .month-title {
     text-align: center;
     font-weight: bold;
     cursor: pointer;
-    margin-bottom: 4px;
+    margin-bottom: 2px;
+    font-size: 0.85em;
   }
 
   table {
@@ -68,7 +69,7 @@
 
   th, td {
     border: 1px solid #eee;
-    padding: 3px;
+    padding: 1px 3px;
     text-align: center;
   }
 
@@ -97,7 +98,7 @@
   }
 
   .month-scroll {
-    height: 80vh;
+    height: calc(100vh - 70px);
     overflow-y: auto;
   }
 </style>
@@ -176,13 +177,21 @@ function appendMonth(container) {
   container.appendChild(renderFullMonth(d.getFullYear(), d.getMonth()));
 }
 
-// Scroll only the year container (not the page) so today's cell is centred.
+// Scroll only the year container (not the page). Show the whole current year
+// from its top when it fits (today is then inside it); otherwise centre today.
 function scrollToToday(smooth) {
   const container = document.getElementById("yearView");
-  const el = container.querySelector(".today") || document.getElementById("year-" + today.getFullYear());
+  const yearEl = document.getElementById("year-" + today.getFullYear());
+  const el = container.querySelector(".today") || yearEl;
   if (!el) return;
-  const offset = el.getBoundingClientRect().top - container.getBoundingClientRect().top;
-  const top = container.scrollTop + offset - (container.clientHeight - el.offsetHeight) / 2;
+  const cTop = container.getBoundingClientRect().top;
+  let top;
+  if (yearEl && yearEl.offsetHeight <= container.clientHeight) {
+    top = container.scrollTop + yearEl.getBoundingClientRect().top - cTop;
+  } else {
+    const offset = el.getBoundingClientRect().top - cTop;
+    top = container.scrollTop + offset - (container.clientHeight - el.offsetHeight) / 2;
+  }
   container.scrollTo({ top: Math.max(0, top), behavior: smooth ? "smooth" : "auto" });
 }
 
